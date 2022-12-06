@@ -6,10 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @RestController
-@RequestMapping("/api/v1/elevator")
+@RequestMapping("/api/elevator")
 public class ElevatorController {
 
     @Autowired
@@ -26,13 +27,28 @@ public class ElevatorController {
     }
 
     @GetMapping("/findElevatorById/{id}")
-    public Elevator getElevatorById(@PathVariable Long id) {
+    public Optional<Elevator> getElevatorById(@PathVariable Long id) {
         return elevatorService.findById(id);
     }
 
     @GetMapping("/findElevatorByFloor/{floor}")
     public Stream<Elevator> getElevatorByFloor(@PathVariable int floor) {
         return elevatorService.findByFloor(floor);
+    }
+
+    @GetMapping("/getElevatorsAsync")
+    public List<Elevator> getAllEleavtorsAsync() {
+        return elevatorService.getElevatorsAsync();
+    }
+
+    @PostMapping("/orderElevator/{startingFloor}&{targetFloor}")
+    public void orderElevator(@PathVariable int startingFloor, @PathVariable int targetFloor) throws InterruptedException {
+        elevatorService.orderElevator(startingFloor, targetFloor);
+    }
+
+    @GetMapping("/findIdlingElevator/{startingFloor}&{targetFloor}")
+    public void findFreeElevator(@PathVariable int startingFloor, @PathVariable int targetFloor) {
+        elevatorService.findFreeElevator(startingFloor, targetFloor);
     }
 
 }
