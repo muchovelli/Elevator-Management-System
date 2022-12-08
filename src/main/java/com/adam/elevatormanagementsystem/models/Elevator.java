@@ -1,6 +1,8 @@
 package com.adam.elevatormanagementsystem.models;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 @Entity
 public class Elevator {
@@ -14,8 +16,7 @@ public class Elevator {
     @Column(name = "direction")
     private EDirection direction = EDirection.STOP;
 
-    @Column(name = "taget_floor")
-    private int targetFloor = 0;
+    private int targetFloor;
 
     @Column(name = "state")
     private State state = State.IDLE;
@@ -82,27 +83,5 @@ public class Elevator {
     public void setNumOfPassengers(int numOfPassengers) {
         this.numOfPassengers = numOfPassengers;
     }
-
-    public void move() throws InterruptedException {
-        if (getTargetFloor() > getFloor()) {
-            setDirection(EDirection.UP);
-            setState(State.MOVING);
-            while(getFloor() < getTargetFloor()) {
-                Thread.sleep(5000);
-                System.out.println("Elevator " + getId() + " is on floor " + getFloor() + " going up" + " state: " + getState());
-                setFloor(getFloor() + 1);
-            }
-        } else if (getTargetFloor() < getFloor()) {
-            setDirection(EDirection.DOWN);
-            setState(State.MOVING);
-            while(getFloor() > getTargetFloor()) {
-                Thread.sleep(5000);
-                System.out.println("Elevator " + getId() + " is on floor " + getFloor() + " going down" + " state: " + getState());
-                setFloor(getFloor() + 1);
-            }
-        }
-        System.out.println("Elevator " + getId() + " stopped at floor " + getFloor());
-        setDirection(EDirection.STOP);
-        setState(State.IDLE);
-    }
+    
 }

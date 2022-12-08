@@ -21,11 +21,12 @@ public class DataLoader implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        for(int i = 1; i <= 16; i++) {
-            Elevator elevator = new Elevator((long) i, 0, EDirection.STOP,0, State.IDLE, 0);
+        for (int i = 1; i <= 16; i++) {
+            Elevator elevator = new Elevator((long) i, 0, EDirection.STOP, 0, State.IDLE, 0);
             elevatorService.save(elevator);
             System.out.println(elevator);
             System.out.println("Elevator " + elevator.getId() + " is on floor " + elevator.getFloor());
         }
+        elevatorService.getElevatorsStatus();
     }
 }

@@ -5,6 +5,7 @@ import com.adam.elevatormanagementsystem.services.ElevatorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -37,7 +38,7 @@ public class ElevatorController {
     }
 
     @GetMapping("/getElevatorsAsync")
-    public List<Elevator> getAllEleavtorsAsync() {
+    public List<Elevator> getAllEleavtorsAsync() throws IOException, InterruptedException {
         return elevatorService.getElevatorsAsync();
     }
 
@@ -48,7 +49,12 @@ public class ElevatorController {
 
     @GetMapping("/findIdlingElevator/{startingFloor}&{targetFloor}")
     public void findFreeElevator(@PathVariable int startingFloor, @PathVariable int targetFloor) {
-        elevatorService.findFreeElevator(startingFloor, targetFloor);
+        elevatorService.findFreeElevator(startingFloor);
+    }
+
+    @GetMapping("/status")
+    public void status() throws IOException, InterruptedException {
+        elevatorService.getElevatorsStatus();
     }
 
 }
