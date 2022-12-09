@@ -1,12 +1,18 @@
 package com.adam.elevatormanagementsystem.services;
 
-import com.adam.elevatormanagementsystem.models.*;
+import com.adam.elevatormanagementsystem.models.EDirection;
+import com.adam.elevatormanagementsystem.models.Elevator;
+import com.adam.elevatormanagementsystem.models.State;
+import com.adam.elevatormanagementsystem.models.ThreadPoolExecutorUtil;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Stream;
 
+/**
+ * @author Adam
+ * @created 2020/05/18
+ */
 @Service
 public class ElevatorServiceImpl implements ElevatorService {
 
@@ -14,63 +20,60 @@ public class ElevatorServiceImpl implements ElevatorService {
 
     private final int MAX_FLOOR = 16;
     private final int MIN_FLOOR = 0;
-    private final int MAX_ELEVATORS = 16;
+
+    private List<Thread> threads = new ArrayList<>();
 
     public List<Elevator> elevators = new ArrayList<>();
 
+    /**
+     * @param threadPoolExecutorUtil
+     */
     public ElevatorServiceImpl(ThreadPoolExecutorUtil threadPoolExecutorUtil) {
         this.threadPoolExecutorUtil = threadPoolExecutorUtil;
     }
 
+    /**
+     * @param elevator
+     */
     @Override
     public void save(Elevator elevator) {
         elevators.add(elevator);
     }
 
+    /**
+     * @return all elevators
+     */
     @Override
     public List<Elevator> findAll() {
         return elevators;
     }
 
-    @Override
-    public Optional<Elevator> findById(Long id) {
-        return Optional.ofNullable(elevators.stream().filter(elevator -> elevator.getId() == id).findFirst().orElse(null));
-    }
-
-    //TODO
-    @Override
-    public Stream<Elevator> findByFloor(int floor) {
-        return null;
-    }
-
-    @Override
-    public List<Elevator> getElevatorsAsync() {
-        for (int i = 0; i < MAX_ELEVATORS; i++) {
-            TaskThread taskThread = new TaskThread();
-            threadPoolExecutorUtil.executeTask(taskThread);
-            Elevator elevator = new Elevator();
-            elevator.setFloor(1);
-            save(elevator);
-            System.out.println("Elevator " + elevator.getId() + " is on floor " + elevator.getFloor());
-        }
-        TaskThread taskThread = new TaskThread(this);
-        threadPoolExecutorUtil.executeTask(taskThread);
-        return taskThread.elevators;
-    }
-
-
-    private EDirection getDirection(Elevator elevator, int startingFloor, int targetFloor) {
+    /**
+     * @param elevator
+     * @param startingFloor
+     * @param targetFloor
+     * @return EDiretion
+     * @throws InterruptedException
+     */
+    private EDirection getDirection(Elevator elevator, final int startingFloor, final int targetFloor) throws IllegalArgumentException {
         elevator.setTargetFloor(targetFloor);
+
         if (startingFloor > elevator.getTargetFloor()) {
             return EDirection.DOWN;
-        } else if (startingFloor < elevator.getTargetFloor()) {
+        }
+        if (startingFloor < elevator.getTargetFloor()) {
             return EDirection.UP;
         }
-        System.out.println("Are you drunk? ;)");
-        return EDirection.STOP;
+
+        throw new IllegalArgumentException("Invalid floor, are you drunk? :D");
     }
 
-    public void startMoving(Elevator elevator) throws InterruptedException, IOException {
+    /**
+     * @param thread
+     * @param elevator
+     * @throws InterruptedException
+     */
+    public void startMoving(Thread thread, Elevator elevator) throws InterruptedException, IOException {
         if (elevator.getTargetFloor() > elevator.getFloor()) {
             elevator.setDirection(EDirection.UP);
             while (elevator.getFloor() < elevator.getTargetFloor()) {
@@ -83,14 +86,16 @@ public class ElevatorServiceImpl implements ElevatorService {
             }
         }
 
-        System.out.println("Elevator " + elevator.getId() + " stopped at floor " + elevator.getFloor());
         elevator.setDirection(EDirection.STOP);
         elevator.setState(State.IDLE);
         getElevatorsStatus();
-
+        thread.stop();
+        getElevatorsStatus();
     }
 
-
+    /**
+     * @throws InterruptedException, IOException
+     */
     public void getElevatorsStatus() throws IOException, InterruptedException {
         final String os = System.getProperty("os.name");
         if (os.contains("Windows")) {
@@ -101,49 +106,60 @@ public class ElevatorServiceImpl implements ElevatorService {
 
         for (Elevator elevator : findAll()) {
             System.out.println("ID: " + elevator.getId() + "\t| Floor: " + elevator.getFloor() + "\t| state: " + elevator.getState() + "\t| direction: " + elevator.getDirection() + "\t| target floor: " + elevator.getTargetFloor());
+        }
 
+        System.out.println("\n\n");
+
+        for (int i = 0; i < threads.size(); i++) {
+            if (threads.get(i).isAlive()) {
+                System.out.println("Thread " + i + " is " + threads.get(i).getState());
+            }
         }
     }
 
-    //TODO
-
+    /**
+     * @param startingFloor - floor where you want to get in
+     * @param targetFloor   - the floor where the elevator should go
+     * @throws InterruptedException
+     */
     @Override
-    public void orderElevator(int startingFloor, int targetFloor) {
+    public void orderElevator(final int startingFloor, final int targetFloor) throws IllegalArgumentException {
         if (startingFloor > MAX_FLOOR || startingFloor < MIN_FLOOR || targetFloor > MAX_FLOOR || targetFloor < MIN_FLOOR) {
-            System.out.println("Invalid floor");
-            return;
+            throw new IllegalArgumentException("Invalid floor");
         }
 
         Elevator elevator = findFreeElevator(startingFloor);
 
         if (elevator == null) {
-            System.out.println("No free elevator\nTry again later");
-            return;
+            throw new IllegalArgumentException("No free elevator\nTry again later");
         }
 
-
-        //System.out.println("Found elevator " + elevator.getId() + " on floor " + elevator.getFloor() + " going to floor " + targetFloor + " State: " + elevator.getState());
-        Thread t1 = new Thread(() -> {
+        Thread t1 = new Thread();
+        Thread finalT1 = t1;
+        t1 = new Thread(() -> {
             try {
-                //System.out.println("Elevator started at thread " + Thread.currentThread().getName());
                 if (elevator.getFloor() != startingFloor) {
                     elevator.setTargetFloor(startingFloor);
-                    startMoving(elevator);
+                    Thread finalT = finalT1;
+                    startMoving(finalT, elevator);
                 }
                 elevator.setTargetFloor(targetFloor);
-                startMoving(elevator);
+                startMoving(finalT1, elevator);
             } catch (InterruptedException | IOException e) {
                 e.printStackTrace();
             }
         });
-        System.out.println("Thread " + t1.getName() + " is running");
+        threads.add(t1);
         t1.start();
     }
 
-    public Elevator findFreeElevator(int startingFloor) {
+    /**
+     * @param startingFloor - floor where you want to get in
+     * @return Elevator
+     */
+    public Elevator findFreeElevator(final int startingFloor) {
         Elevator elevator = new Elevator();
 
-        // Finding the closest elevator
         HashMap<Elevator, Integer> elevatorsDistance = new HashMap<>();
         for (Elevator e : findAll()) {
             if (e.getState() == State.IDLE && e.getDirection() == EDirection.STOP) {
@@ -159,11 +175,19 @@ public class ElevatorServiceImpl implements ElevatorService {
         return elevator;
     }
 
+    /**
+     * @param elevator - elevator which is moving
+     * @throws InterruptedException
+     */
     private void move(Elevator elevator) throws InterruptedException, IOException {
         elevator.setState(State.MOVING);
         Thread.sleep(5000);
         getElevatorsStatus();
-        elevator.setFloor(elevator.getFloor() + 1);
+        if (elevator.getDirection() == EDirection.UP) {
+            elevator.setFloor(elevator.getFloor() + 1);
+        } else if (elevator.getDirection() == EDirection.DOWN) {
+            elevator.setFloor(elevator.getFloor() - 1);
+        }
     }
 }
 

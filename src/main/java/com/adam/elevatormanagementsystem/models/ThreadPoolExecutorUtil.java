@@ -4,7 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class ThreadPoolExecutorUtil {
@@ -15,7 +18,7 @@ public class ThreadPoolExecutorUtil {
 
     public ThreadPoolExecutorUtil() {
         BlockingQueue<Runnable> blockingQueue = new ArrayBlockingQueue(10000);
-        threadPoolExecutor = new ThreadPoolExecutor(16, 16, 20, TimeUnit.SECONDS, blockingQueue);
+        threadPoolExecutor = new ThreadPoolExecutor(16, 16, 2000, TimeUnit.SECONDS, blockingQueue);
         threadPoolExecutor.setRejectedExecutionHandler((r, executor) ->
         {
             try {
@@ -27,12 +30,6 @@ public class ThreadPoolExecutorUtil {
             }
             threadPoolExecutor.execute(r);
         });
-    }
-
-    public void executeTask(TaskThread taskThread) {
-        Future<?> future = threadPoolExecutor.submit(taskThread);
-
-        System.out.println("Number of Active Threads: " + threadPoolExecutor.getActiveCount());
     }
 
 }

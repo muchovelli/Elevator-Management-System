@@ -21,19 +21,15 @@ public class Elevator {
     @Column(name = "state")
     private State state = State.IDLE;
 
-    @Column(name = "numOfPassengers")
-    private int numOfPassengers = 0;
-
     public Elevator() {
     }
 
-    public Elevator(Long id, int floor, EDirection direction, int targetFloor, State state, int numOfPassengers) {
+    public Elevator(Long id, int floor, EDirection direction, int targetFloor, State state) {
         this.id = id;
         this.floor = floor;
         this.direction = direction;
         this.targetFloor = targetFloor;
         this.state = state;
-        this.numOfPassengers = numOfPassengers;
     }
 
     public Long getId() {
@@ -75,13 +71,4 @@ public class Elevator {
     public void setState(State state) {
         this.state = state;
     }
-
-    public int getNumOfPassengers() {
-        return numOfPassengers;
-    }
-
-    public void setNumOfPassengers(int numOfPassengers) {
-        this.numOfPassengers = numOfPassengers;
-    }
-    
 }
